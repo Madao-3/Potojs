@@ -392,5 +392,57 @@ pub fn noise(mut arr: Vec<f32>, mut adjustment: f32) -> Vec<f32> {
 }
 
 // vibrance
+#[wasm_bindgen]
+pub fn vibrance(mut arr: Vec<f32>, mut adjustment: f32) -> Vec<f32> {
+    if adjustment == 0f32 {
+        return arr;
+    }
+    let mut i = 0usize;
+    let count = arr.len();
+    adjustment *= -1f32;
+    loop {
+        if i >= count {
+            break;
+        }
+        let r = arr[i];
+        let g = arr[i + 1];
+        let b = arr[i + 2];
+        let max = f32_max(&vec![r, g, b]);
+        let avg = (r + g + b) / 3f32;
+        let amt = (((max - avg).abs() * 2f32 / 255f32) * adjustment) / 100f32;
+
+        if r != max {
+            arr[i] += (max - r) * amt
+        };
+        if g != max {
+            arr[i + 1] += (max - g) * amt
+        };
+        if b != max {
+            arr[i + 2] += (max - b) * amt
+        };
+        i += 4;
+    }
+    arr
+}
+
+#[wasm_bindgen]
+pub fn invert(mut arr: Vec<f32>, is_invert: bool) -> Vec<f32> {
+    if !is_invert {
+        return arr;
+    }
+    let mut i = 0usize;
+    let count = arr.len();
+    loop {
+        if i >= count {
+            break;
+        }
+        arr[i] = 255f32 - arr[i];
+        arr[i + 1] = 255f32 - arr[i + 1];
+        arr[i + 2] = 255f32 - arr[i + 2];
+        i += 4;
+    }
+    arr
+}
+
 // stack blur
 // sharpen
