@@ -1,7 +1,11 @@
 #![allow(unused)]
 #![allow(illegal_floating_point_literal_pattern)]
 
+extern crate js_sys;
 extern crate wasm_bindgen;
+
+use js_sys::Math;
+// use rand::Rng;
 use std::f32;
 use wasm_bindgen::prelude::*;
 
@@ -9,11 +13,19 @@ use wasm_bindgen::prelude::*;
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     fn log(s: &str);
+    #[wasm_bindgen(js_name = Math)]
+    static math: Math;
 }
 
 // macro_rules! console_log {
 //     ($($t:tt)*) => (log(&format_args!($($t)*).to_string()))
 // }
+
+fn random_range(min: f32, max: f32) -> f32 {
+    // let mut rng = StdRng::from_entropy();
+    let rand = Math::random() as f32;
+    (min + (rand * (max - min))).round()
+}
 
 fn trauncate(number: f32) -> f32 {
     if number > 255f32 {
@@ -21,18 +33,13 @@ fn trauncate(number: f32) -> f32 {
     } else if number < 0f32 {
         return 0f32;
     }
-    number
+    number.floor()
 }
 
 //  0 < α < 1
 //  f(x)= α(x−128)+128+b
 fn contrast_adjust(value: f32, contrast: f32) -> f32 {
-    // value = value / 255f32;
-    // value -= 0.5;
-    // value *= contrast;
-    // value += 0.5;
-    // value *= 255f32;
-    let factor = (259f32 * (contrast + 255f32)) / (255f32 * (259f32 - contrast));
+    let factor = (255f32 * (contrast + 255f32)) / (255f32 * (255f32 - contrast));
     let result = factor * (value - 128f32) + 128f32;
     trauncate(result)
 }
@@ -213,8 +220,7 @@ pub fn contrast(mut arr: Vec<f32>, adjustment: f32) -> Vec<f32> {
     if adjustment == 0f32 {
         return arr;
     }
-    // adjustment = (adjustment + 100f32) / 100f32;
-    // adjustment *= f32::powf();
+
     let mut i = 0usize;
     let count = arr.len();
     loop {
@@ -341,9 +347,50 @@ pub fn sepia(mut arr: Vec<f32>, mut adjustment: f32) -> Vec<f32> {
     arr
 }
 
-// vibrance
-// hue
 // gamma
-// sepia
+#[wasm_bindgen]
+pub fn gamma(mut arr: Vec<f32>, mut adjustment: f32) -> Vec<f32> {
+    if adjustment == 0f32 {
+        return arr;
+    }
+    let mut i = 0usize;
+    let count = arr.len();
+    loop {
+        if i >= count {
+            break;
+        }
+        let r = arr[i];
+        let g = arr[i + 1];
+        let b = arr[i + 2];
+        arr[i] = (r / 255f32).powf(adjustment) * 255f32;
+        arr[i + 1] = (g / 255f32).powf(adjustment) * 255f32;
+        arr[i + 2] = (b / 255f32).powf(adjustment) * 255f32;
+        i += 4;
+    }
+    arr
+}
+// noise
+#[wasm_bindgen]
+pub fn noise(mut arr: Vec<f32>, mut adjustment: f32) -> Vec<f32> {
+    if adjustment == 0f32 {
+        return arr;
+    }
+    let mut i = 0usize;
+    let count = arr.len();
+    adjustment = adjustment.abs() * 2.55;
+    loop {
+        if i >= count {
+            break;
+        }
+        let rand = random_range(-1f32 * adjustment, adjustment);
+        arr[i] += rand;
+        arr[i + 1] += rand;
+        arr[i + 2] += rand;
+        i += 4;
+    }
+    arr
+}
+
+// vibrance
 // stack blur
 // sharpen
